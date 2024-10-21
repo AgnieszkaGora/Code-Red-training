@@ -1,25 +1,58 @@
-import pandas as pd
-import matplotlib.dates as dates
-import matplotlib.pyplot as plt
+import tkinter as tk
+from tkcalendar import Calendar
+from tkinter import messagebox
 
-data = [['Meeting', '2024-10-27 12:30', '2024-10-27 13:30'], ['Training', '2024-10-28 14:00', '2024-10-28 15:30'], ['1to1', '2024-10-28 16:30', '2024-10-28 17:00']]
-df = pd.DataFrame(data, columns = ['Task', 'Start_Time', 'End_Time'])
+app = tk.Tk()
+app.title("To Do List")
 
-df_phase = df
-df_phase['Start_Time'] = pd.to_datetime(df_phase['Start_Time'], format='%Y-%m-%d %H:%M')
-df_phase['End_Time'] = pd.to_datetime(df_phase['End_Time'], format='%Y-%m-%d %H:%M')
+def add_task():
+    try:
+        task = task_entry.get()
+        date = calendar.get_date()
+        if not task:
+            raise ValueError("Task cannot be empty")
+        task_listbox.insert(tk.END, f"{date}: {task}")
+        task_entry.delete(0, tk.END)
+    except ValueError as e:
+        messagebox.showerror("Input Error", str(e))
+    except Exception as e:
+        messagebox.showerror("Error", f"An unexpected error occurred: {str(e)}")
 
-sdate = df_phase['Start_Time'].tolist()
-edate = df_phase['End_Time'].tolist()
-tasks = df_phase['Task'].tolist()
+def remove_task():
+    try:
+        selected_task_index = task_listbox.curselection()[0]
+        task_listbox.delete(selected_task_index)
+    except IndexError:
+        messagebox.showwarning("Warning", "You must select a task to remove.")
 
-edate, sdate = [dates.date2num(item) for item in (edate, sdate)]
-time_diff = edate - sdate
-ypos = range(len(tasks))
-fig, ax = plt.subplots()
-ax.barh(ypos, time_diff, left=sdate, height=0.8, align='center', color='grey',edgecolor='black')
-plt.yticks(ypos, tasks)
-ax.axis('tight')
+def update_task():
+   try:
+       task = task_entry.get()
+       date = calendar.get_date()
+       selected_task_index = task_listbox.curselection()[0]
+       for selected_task_index in task_listbox:
+           task_listbox.delete(selected_task_index)
+           task_listbox.insert(tk.END, f"{date}: {task}")
+   except IndexError:
+       messagebox.showwarning("Warning", "You must select a task to update.")
 
-ax.xaxis_date()
-plt.show()
+calendar = Calendar(app, selectmode='day')
+calendar.grid(column=1, row=0, padx=10, pady=10)
+
+task_entry = tk.Entry(app, width=50)
+task_entry.grid(column= 1, row=2, padx=10, pady=10)
+
+
+task_listbox = tk.Listbox(app, width=50, height=10)
+task_listbox.grid(column=1, row= 3, padx=10, pady=10)
+
+add_task_button = tk.Button(app, text="Add Task", command=add_task)
+add_task_button.grid(column=0, row=1, padx=5, pady=5)
+
+remove_task_button = tk.Button(app, text="Remove Task", command=remove_task)
+remove_task_button.grid(column=1, row=1, pady=5)
+
+update_task_button = tk.Button(app, text="Update Task", command=update_task)
+update_task_button.grid(column=2, row=1, padx=5, pady=5)
+
+app.mainloop()
