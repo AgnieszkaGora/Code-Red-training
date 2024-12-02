@@ -1,1 +1,223 @@
+import tkinter as tk
+from tkinter import ttk
+import customtkinter as ctk
+import csv
+from tkcalendar import Calendar
+from tkinter import messagebox
+
+app = ctk.CTk()
+app.title("To Do List")
+app.geometry("1030x400")
+
+def remove_task():
+    try:
+        selected_task_index = tree.selection()[0]
+        tree.delete(selected_task_index)
+    except IndexError:
+        messagebox.showwarning("Warning", "You must select a task to remove.")
+
+def time_values_start():
+    times1 = []
+    postfix = 'AM'
+    for minute in range(0, 1440):
+        if minute >= 720:
+            postfix = 'PM'
+        hour = minute // 60
+        minutes = minute - (hour * 60)
+        if hour < 10:
+            hour = f'0{hour}'
+        if minutes < 10:
+            minutes = f'0{minutes}'
+        times1.append(f'{hour}:{minutes} {postfix}')
+    return times1
+
+def time_values_end():
+    times2 = []
+    postfix = 'AM'
+    for minute in range(0, 1440):
+        if minute >= 720:
+            postfix = 'PM'
+        hour = minute // 60
+        minutes = minute - (hour * 60)
+        if hour < 10:
+            hour = f'0{hour}'
+        if minutes < 10:
+            minutes = f'0{minutes}'
+        times2.append(f'{hour}:{minutes} {postfix}')
+    return times2
+
+def save_tasks_to_csv(task):
+    with open('data.csv', mode='a', newline='') as file:
+        writer=csv.writer(file)
+        writer.writerow(task)
+
+def load_tasks():
+    for task in tree.get_children():
+        tree.delete(0, tk.END)
+    with open('data.csv','r', newline='') as file:
+            reader=csv.reader(file)
+            for row in reader:
+                tree.insert("", "end", values=row)
+
+def update_task_in_csv(old_task, new_task):
+    all_tasks = []
+    with open('data.csv', 'r', newline= '') as file:
+        reader = csv.reader(file)
+        all_tasks = list(reader)
+
+    for i, task in enumerate(all_tasks):
+        if task == old_task:
+            all_tasks[i] = new_task
+            break
+
+    with open('data.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(all_tasks)
+
+def open_form(is_update=False, task_data=None):
+
+    form_window = ctk.CTkToplevel(app)
+    form_window.title("Add/Update Task")
+
+    ctk.CTkLabel(form_window, text="Task Name:").grid(row=0, column=0, padx=10, pady=10)
+    task_name_entry = ctk.CTkEntry(form_window)
+
+    task_name_entry.grid(row=0, column=1, padx=10, pady=10)
+
+    ctk.CTkLabel(form_window, text="Date:").grid(row=1, column=0, padx=10, pady=10)
+    date_entry = ctk.CTkEntry(form_window)
+    date_entry.grid(row=1, column=1, padx=10, pady=10)
+
+    if is_update==False:
+        date_entry.insert(0, calendar.get_date())
+
+    ctk.CTkLabel(form_window, text="Category:").grid(row=2, column=0, padx=10, pady=10)
+    category_entry = ctk.CTkEntry(form_window)
+    category_entry.grid(row=2, column=1, padx=10, pady=10)
+
+    ctk.CTkLabel(form_window, text="Description:").grid(row=3, column=0, padx=10, pady=10)
+    description_entry = ctk.CTkEntry(form_window)
+    description_entry.grid(row=3, column=1, padx=10, pady=10)
+
+    ctk.CTkLabel(form_window, text="Start time:").grid(row=4, column=0, padx=10, pady=10)
+    start_entry = ctk.CTkEntry(form_window)
+    start_entry.grid(row=4, column=1, padx=10, pady=10)
+
+    if is_update == False:
+        start_entry.insert(0, str(start_time.get()))
+
+    ctk.CTkLabel(form_window, text="End time:").grid(row=5, column=0, padx=10, pady=10)
+    end_entry = ctk.CTkEntry(form_window)
+    end_entry.grid(row=5, column=1, padx=10, pady=10)
+
+    if is_update == False:
+        end_entry.insert(0, str(end_time.get()))
+
+    if is_update and task_data:
+        task_name_entry.insert(0, task_data[0])
+        date_entry.insert(0, task_data[1])
+        category_entry.insert(0, task_data[2])
+        description_entry.insert(0, task_data[3])
+        start_entry.insert(0, task_data[4])
+        end_entry.insert(0, task_data[5])
+
+        task_name_entry.grid(row=0, column=1)
+        date_entry.grid(row=1, column=1)
+        category_entry.grid(row=2, column=1)
+        description_entry.grid(row=3, column=1)
+        start_entry.grid(row=4, column=1)
+        end_entry.grid(row=5, column=1)
+
+
+    submit_button = ctk.CTkButton(form_window, text="Submit",
+                          command=lambda: submit_form(task_name_entry.get(), date_entry.get(), category_entry.get(),
+                                                      description_entry.get(), start_entry.get(), end_entry.get()))
+    submit_button.grid(row=6, column=0, pady=10)
+
+    close_button = ctk.CTkButton(form_window, text='Close',command = form_window.destroy)
+    close_button.grid(row=6, column=1, pady=10)
+
+
+def submit_form(name, date, category, task_description, start_time, end_time):
+    task=[name, date, category, task_description, start_time, end_time]
+    tree.insert("", "end", values=(name, date, category, task_description, start_time, end_time))
+    save_tasks_to_csv(task)
+    messagebox.showinfo("Success", "Event added successfully!")
+
+calendar = Calendar(app, selectmode='day', width=300, height=300)
+calendar.grid(column=0, row=0, padx=10, pady=10, rowspan=5)
+
+style=ttk.Style()
+style.configure("Custom.Treeview", font=("Helvetica",13), rowheight=25)
+style.configure("Custom.Treeview.Heading", font=("Helvetica",14, "bold"))
+columns = ("Task Name", "Date", "Category", "Description", "Start time", "End time")
+tree = ttk.Treeview(app, columns=columns, show="headings", style="Custom.Treeview")
+for col in columns:
+    tree.heading(col, text=col)
+    tree.column(col, width=250)
+tree.grid(columnspan= 6, padx=20, pady=20, sticky="nsew")
+tree.heading("Task Name", text="Task Name")
+tree.heading("Date", text="Date")
+tree.heading("Category", text="Category")
+tree.heading("Description", text="Description")
+tree.heading("Start time", text="Start Time")
+tree.heading("End time", text="End Time")
+
+def insert_data(data_to_insert):
+    for item in data_to_insert:
+        tree.insert("","end",values=item)
+
+def filter_data():
+    selected_category=category_combobox.get()
+
+    for row in tree.get_children():
+        tree.delete(row)
+
+    filtered_data= [item for item in tree if selected_category=="" or item[2]==selected_category]
+
+    for item in filtered_data:
+        if selected_category=="All" or item[2]==selected_category:
+            tree.insert("","end",values=item)
+
+
+add_task_button = ctk.CTkButton(app, text="Add Task", command=lambda: open_form(is_update=False))
+add_task_button.grid(column=3, row=1, padx=5, pady=5)
+
+ctk.CTkLabel(app, text="Start time:").grid(row=1, column=1, padx=10, pady=10)
+
+start_time = tk.Spinbox(app, wrap=True, repeatinterval=10, font=("Helvetica",14), width=10, values=time_values_start())
+start_time.grid(column=1, row=2, padx=5, pady=5)
+
+ctk.CTkLabel(app, text="End time:").grid(row=3, column=1, padx=10, pady=10)
+
+end_time=tk.Spinbox(app,wrap=True, repeatinterval=10, font=("Helvetica",14), width=10, values=time_values_end())
+end_time.grid(column=1, row=4, padx=5, pady=5)
+
+remove_task_button = ctk.CTkButton(app, text="Remove Task", command=remove_task)
+remove_task_button.grid(column=3, row=2, padx=5, pady=5)
+
+update_task_button = ctk.CTkButton(app, text="Update Task",  command=lambda: open_form(is_update=True, task_data=tree.item(tree.selection()[0])["values"]))
+update_task_button.grid(column=3, row=3, padx=5, pady=5)
+
+refresh_task_button = ctk.CTkButton(app, text="Refresh Table", command=load_tasks)
+refresh_task_button.grid(column=3, row=4, padx=5, pady=5)
+
+filter_label = ctk.CTkLabel(app, text="Select category:")
+filter_label.grid(column=4, row=1, padx=10, pady=5)
+
+
+def combobox_callback(choice):
+    print("combobox dropdown clicked:", choice)
+
+category_combobox = ctk.CTkComboBox(master=app,
+                                     values=["All", "Weekly","Monthly","Mandatory", "Recurring Event", "Break", "Daily"],
+                                     command=combobox_callback)
+category_combobox.grid(row=2, column=4, padx=5, pady=5)
+category_combobox.set("All")
+
+filter_button = ctk.CTkButton(app, text="Filter", command=filter_data)
+filter_button.grid(column=4, row=3, padx=10, pady=5)
+
+load_tasks()
+app.mainloop()
 
